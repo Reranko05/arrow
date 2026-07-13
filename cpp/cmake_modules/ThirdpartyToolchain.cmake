@@ -2831,6 +2831,12 @@ if(ARROW_WITH_SIMDJSON)
                      ${ARROW_SIMDJSON_REQUIRED_VERSION}
                      IS_RUNTIME_DEPENDENCY
                      FALSE)
+
+  # Fix for MSVC unresolved external symbol error when linking static simdjson
+  if(TARGET simdjson::simdjson AND MSVC)
+    set_target_properties(simdjson::simdjson PROPERTIES INTERFACE_COMPILE_DEFINITIONS
+                                                        "SIMDJSON_USING_STATIC_LIB")
+  endif()
 endif()
 
 function(build_rapidjson)
