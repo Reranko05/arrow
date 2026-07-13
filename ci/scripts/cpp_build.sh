@@ -305,6 +305,16 @@ if [ "${ARROW_USE_MESON:-OFF}" = "ON" ]; then
 else
   : ${CMAKE_BUILD_PARALLEL_LEVEL:=${ARROW_BUILD_PARALLEL}}
   export CMAKE_BUILD_PARALLEL_LEVEL
+
+  if [ -f "$LIB" ]; then
+    echo "Found: $LIB"
+    ls -l "$LIB" || true
+
+  else
+    echo "Library not found."
+    find . -name "simdjson.lib"
+  fi
+  
   time cmake --build . --target install
 fi
 

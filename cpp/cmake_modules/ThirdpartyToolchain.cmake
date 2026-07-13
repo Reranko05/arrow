@@ -2801,12 +2801,12 @@ function(build_simdjson)
   list(APPEND CMAKE_MESSAGE_INDENT "simdjson: ")
   message(STATUS "Building simdjson from source")
 
-  prepare_fetchcontent()
-
   fetchcontent_declare(simdjson
                        ${FC_DECLARE_COMMON_OPTIONS} OVERRIDE_FIND_PACKAGE
                        URL ${SIMDJSON_SOURCE_URL}
                        URL_HASH "SHA256=${ARROW_SIMDJSON_BUILD_SHA256_CHECKSUM}")
+
+  prepare_fetchcontent()
 
   fetchcontent_makeavailable(simdjson)
 
@@ -2825,18 +2825,12 @@ endfunction()
 if(ARROW_WITH_SIMDJSON)
   set(ARROW_SIMDJSON_REQUIRED_VERSION "3.0.0")
   resolve_dependency(simdjson
-                     HAVE_ALT
-                     TRUE
-                     REQUIRED_VERSION
-                     ${ARROW_SIMDJSON_REQUIRED_VERSION}
-                     IS_RUNTIME_DEPENDENCY
-                     FALSE)
-
-  # Fix for MSVC unresolved external symbol error when linking static simdjson
-  if(TARGET simdjson::simdjson AND MSVC)
-    set_target_properties(simdjson::simdjson PROPERTIES INTERFACE_COMPILE_DEFINITIONS
-                                                        "SIMDJSON_USING_STATIC_LIB")
-  endif()
+                    HAVE_ALT
+                    TRUE
+                    REQUIRED_VERSION
+                    ${ARROW_SIMDJSON_REQUIRED_VERSION}
+                    IS_RUNTIME_DEPENDENCY
+                    FALSE)
 endif()
 
 function(build_rapidjson)
