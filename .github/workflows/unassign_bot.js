@@ -23,8 +23,8 @@
 
 const helpers = require("./dev_pr/helpers.js");
 
-const WARN_AFTER_DAYS = 5 / (24 * 60); // 5 minutes
-const GRACE_DAYS = 1 / (24 * 60);      // 1 minute
+const WARN_AFTER_DAYS = 5;
+const GRACE_DAYS = 3;
 const LABELS = ["good-first-issue", "good-second-issue"];
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -41,10 +41,14 @@ function linkedIssue(pullRequest) {
 }
 
 module.exports = async ({ github, context }) => {
-  const { owner, repo } = context.repo;
+  // const { owner, repo } = context.repo;
+  // Read-only audit of upstream Apache Arrow issues.
+  const owner = "apache";
+  const repo = "arrow";
   const paginate = (method, params) =>
     github.paginate(method, { owner, repo, per_page: 100, ...params });
 
+  /*
   async function comment(number, body) {
     await github.rest.issues.createComment({
       owner,
@@ -70,6 +74,13 @@ module.exports = async ({ github, context }) => {
         `If you are still working on this issue, please leave a comment here to let us know. ` +
         `A maintainer or collaborator can reassign it to you.\n\n` +
         `Other contributors who are interested in working on this issue are welcome to pick it up.`
+    );
+  }
+  */
+
+  function logCandidate(number, login, action, reason) {
+    console.log(
+        `[AUDIT] issue=#${number} contributor=@${login} action=${action} reason="${reason}"`
     );
   }
 
@@ -114,10 +125,19 @@ module.exports = async ({ github, context }) => {
       return;
     }
 
+    /*
     await unassign(
       number,
       author,
       `PR #${pr.number} was closed without being merged`
+    );
+    return;
+    */
+    logCandidate(
+        number,
+        author,
+        "would-unassign",
+        `PR #${pr.number} was closed without being merged`
     );
     return;
   }
@@ -151,7 +171,13 @@ module.exports = async ({ github, context }) => {
         );
 
         if (hasOpenPr) {
-          continue;
+         logCandidate(
+             issue.number,
+             login,
+             "protected",
+             "contributor has an open linked PR"
+         );
+         continue;
         }
 
         const events = await paginate(github.rest.issues.listEvents, {
@@ -196,22 +222,36 @@ module.exports = async ({ github, context }) => {
         );
 
         if (!warning) {
-          console.log(`Warning ${login} on #${issue.number}`);
-
+          /*
           await comment(
             issue.number,
             `${warningMarker(login)}\n@${login}, there has been no linked pull request ` +
               `or comment from you on this issue for ${WARN_AFTER_DAYS} days. It will be ` +
               `unassigned in ${GRACE_DAYS} days unless you comment here or open a PR.`
           );
+          */
+          logCandidate(
+            issue.number,
+            login,
+            "would-warn",
+            `no linked PR or activity for ${WARN_AFTER_DAYS} days`
+          );
         } else if (
           Date.now() - Date.parse(warning.created_at) >= GRACE_DAYS * DAY
         ) {
+          /*
           await unassign(
             issue.number,
             login,
             `there was no linked PR or activity for ${WARN_AFTER_DAYS + GRACE_DAYS} days`
           );
+          */
+          logCandidate(
+            issue.number,
+            login,
+            "would-unassign",
+            `there was no linked PR or activity for ${WARN_AFTER_DAYS + GRACE_DAYS} days`
+           );
         }
       } catch (error) {
         console.log(`Failed on #${issue.number} (${login}): ${error.message}`);
